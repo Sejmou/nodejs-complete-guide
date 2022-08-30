@@ -53,4 +53,16 @@ const routesHandler = (req, res) => {
   res.end();
 };
 
-module.exports = routesHandler;
+// this is how one can export multiple things at once
+module.exports = {
+  handler: routesHandler,
+  someValue: 'This is a test value',
+};
+
+// Other way to achieve the same thing:
+// module.exports.handler = routesHandler;
+// module.exports.someValue = 'This is a test value';
+
+// in Node, we can also leave out the "module." part
+// exports.handler = routesHandler;
+// exports.someValue = 'This is a test value';

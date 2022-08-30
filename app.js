@@ -23,29 +23,27 @@ const server = http.createServer((req, res) => {
       console.log('received chunk', chunk);
       body.push(chunk);
     });
-    req.on('end', () => {
-      // when this fires, we received all the data chunks!
-      // now we can concatenate the current (complete) content of body to the globally available buffer
-      // there's also a utility function for parsing the buffer content as a string
-      // note that in this case we just assume the data will be a string
-      // the correct approach always depends on the type of data we receive
+
+    // return statement is important! otherwise the code after if would execute
+    // I guess putting return on its own line directly after req.on would have exactly same effect in this case?
+    return req.on('end', () => {
       const parsedBody = Buffer.concat(body).toString();
       console.log('received all chunks, parsed result:', parsedBody);
       // now, we're ready to write the message to a local file
-      fs.writeFileSync(
+      fs.writeFile(
+        // non-blocking alternative to writeFileSync -> also event-based (callback called after file write operation)
         'message.txt',
-        parsedBody.split('=')[1] // we expect message to be string "message=[messageContent]" where [mesageContent] is the actual form input content
+        parsedBody.split('=')[1],
+        err => {
+          // if any errors occurred we would receive them in err
+          res.statusCode = 302;
+          res.setHeader('Location', '/');
+          return res.end();
+        }
       );
-      // side note: we would actually need to parse special characters like exclamation marks as they are URL-encoded by default
     });
-    // 302 === redirect status code
-    res.statusCode = 302;
-    // Location header specifies where client browser should be redirected to
-    res.setHeader('Location', '/');
-    return res.end();
   }
-  // content type header tells client how to interpret the data we send back
-  // afaik browser will try to parse as HTML per default, so this is not really necessary here
+
   res.setHeader('Content-Type', 'text/html');
   res.write('<html>');
   res.write('<head><title>My First Page</title><head>');
